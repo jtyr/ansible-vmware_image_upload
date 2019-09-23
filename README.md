@@ -20,7 +20,6 @@ Examples
 
 - name: Example of how to upload VM image to vCenter
   hosts: vcenter-servers
-  connection: local
   gather_facts: no
   vars:
     vmware_image_upload_username: mydomain\\myuser

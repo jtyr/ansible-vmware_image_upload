@@ -15,7 +15,8 @@
     fail_msg: The above variable is not set.
 
 - name: Check if the image already exists
-  vmware_guest_facts:
+  local_action:
+    module: vmware_guest_facts
     hostname: "{{ vmware_image_upload_hostname }}"
     port: "{{ vmware_image_upload_port }}"
     username: "{{ vmware_image_upload_username }}"
@@ -33,7 +34,8 @@
 
 - block:
   - name: Upload image
-    vmware_deploy_ovf:
+    local_action:
+      module: vmware_deploy_ovf
       hostname: "{{ vmware_image_upload_hostname }}"
       port: "{{ vmware_image_upload_port }}"
       username: "{{ vmware_image_upload_username }}"
@@ -52,7 +54,8 @@
       'instance' not in vmware_image_upload_exists
 
   - name: Get the power state
-    vmware_guest_facts:
+    local_action:
+      module: vmware_guest_facts
       hostname: "{{ vmware_image_upload_hostname }}"
       port: "{{ vmware_image_upload_port }}"
       username: "{{ vmware_image_upload_username }}"
@@ -70,7 +73,8 @@
     register: vmware_image_upload_facts
 
   - name: Wait for the VM to boot up
-    vmware_guest_tools_wait:
+    local_action:
+      module: vmware_guest_tools_wait
       hostname: "{{ vmware_image_upload_hostname }}"
       port: "{{ vmware_image_upload_port }}"
       username: "{{ vmware_image_upload_username }}"
@@ -81,7 +85,8 @@
       vmware_image_upload_facts.instance.runtime.powerState == 'poweredOn'
 
   - name: Power off the VM
-    vmware_guest_powerstate:
+    local_action:
+      module: vmware_guest_powerstate
       hostname: "{{ vmware_image_upload_hostname }}"
       port: "{{ vmware_image_upload_port }}"
       username: "{{ vmware_image_upload_username }}"
@@ -94,7 +99,8 @@
       vmware_image_upload_facts.instance.runtime.powerState == 'poweredOn'
 
   - name: Convert the VM to template
-    vmware_guest:
+    local_action:
+      module: vmware_guest
       hostname: "{{ vmware_image_upload_hostname }}"
       port: "{{ vmware_image_upload_port }}"
       username: "{{ vmware_image_upload_username }}"
@@ -109,7 +115,8 @@
     vmware_image_upload_state != 'absent'
 
 - name: Remove the VM template
-  vmware_guest:
+  local_action:
+    module: vmware_guest
     hostname: "{{ vmware_image_upload_hostname }}"
     port: "{{ vmware_image_upload_port }}"
     username: "{{ vmware_image_upload_username }}"
