@@ -1,0 +1,128 @@
+---
+
+- name: Assert that all required variables are set
+  assert:
+    that:
+      - vmware_image_upload_username != None
+      - vmware_image_upload_password != None
+      - vmware_image_upload_name != None
+      - vmware_image_upload_datacenter != None
+      - vmware_image_upload_cluster != None
+      - vmware_image_upload_datastore != None
+      - vmware_image_upload_folder != None
+      - vmware_image_upload_network != None
+      - vmware_image_upload_ovf != None
+    fail_msg: The above variable is not set.
+
+- name: Check if the image already exists
+  vmware_guest_facts:
+    hostname: "{{ vmware_image_upload_hostname }}"
+    port: "{{ vmware_image_upload_port }}"
+    username: "{{ vmware_image_upload_username }}"
+    password: "{{ vmware_image_upload_password }}"
+    validate_certs: "{{ vmware_image_upload_validate_certs }}"
+    datacenter: "{{ vmware_image_upload_datacenter }}"
+    name: "{{ vmware_image_upload_name }}"
+    schema: vsphere
+    properties:
+      - config.uuid
+      - config.template
+  changed_when: no
+  failed_when: no
+  register: vmware_image_upload_exists
+
+- block:
+  - name: Upload image
+    vmware_deploy_ovf:
+      hostname: "{{ vmware_image_upload_hostname }}"
+      port: "{{ vmware_image_upload_port }}"
+      username: "{{ vmware_image_upload_username }}"
+      password: "{{ vmware_image_upload_password }}"
+      validate_certs: "{{ vmware_image_upload_validate_certs }}"
+      name: "{{ vmware_image_upload_name }}"
+      datacenter: "{{ vmware_image_upload_datacenter }}"
+      cluster: "{{ vmware_image_upload_cluster }}"
+      datastore: "{{ vmware_image_upload_datastore }}"
+      folder: "{{ vmware_image_upload_folder }}"
+      networks: "{{ vmware_image_upload_networks }}"
+      power_on: yes
+      ovf: "{{ vmware_image_upload_ovf }}"
+    register: vmware_image_upload_vm
+    when: >
+      'instance' not in vmware_image_upload_exists
+
+  - name: Get the power state
+    vmware_guest_facts:
+      hostname: "{{ vmware_image_upload_hostname }}"
+      port: "{{ vmware_image_upload_port }}"
+      username: "{{ vmware_image_upload_username }}"
+      password: "{{ vmware_image_upload_password }}"
+      validate_certs: "{{ vmware_image_upload_validate_certs }}"
+      datacenter: "{{ vmware_image_upload_datacenter }}"
+      uuid: "{{
+          vmware_image_upload_vm.instance.hw_product_uuid | default(
+          vmware_image_upload_exists.instance.config.uuid) }}"
+      schema: vsphere
+      properties:
+        - config.uuid
+        - config.template
+        - runtime.powerState
+    register: vmware_image_upload_facts
+
+  - name: Wait for the VM to boot up
+    vmware_guest_tools_wait:
+      hostname: "{{ vmware_image_upload_hostname }}"
+      port: "{{ vmware_image_upload_port }}"
+      username: "{{ vmware_image_upload_username }}"
+      password: "{{ vmware_image_upload_password }}"
+      validate_certs: "{{ vmware_image_upload_validate_certs }}"
+      uuid: "{{ vmware_image_upload_facts.instance.config.uuid }}"
+    when: >
+      vmware_image_upload_facts.instance.runtime.powerState == 'poweredOn'
+
+  - name: Power off the VM
+    vmware_guest_powerstate:
+      hostname: "{{ vmware_image_upload_hostname }}"
+      port: "{{ vmware_image_upload_port }}"
+      username: "{{ vmware_image_upload_username }}"
+      password: "{{ vmware_image_upload_password }}"
+      validate_certs: "{{ vmware_image_upload_validate_certs }}"
+      uuid: "{{ vmware_image_upload_facts.instance.config.uuid }}"
+      state: shutdown-guest
+      state_change_timeout: 60
+    when: >
+      vmware_image_upload_facts.instance.runtime.powerState == 'poweredOn'
+
+  - name: Convert the VM to template
+    vmware_guest:
+      hostname: "{{ vmware_image_upload_hostname }}"
+      port: "{{ vmware_image_upload_port }}"
+      username: "{{ vmware_image_upload_username }}"
+      password: "{{ vmware_image_upload_password }}"
+      validate_certs: "{{ vmware_image_upload_validate_certs }}"
+      datacenter: "{{ vmware_image_upload_datacenter }}"
+      folder: "{{ vmware_image_upload_folder }}"
+      uuid: "{{ vmware_image_upload_facts.instance.config.uuid }}"
+      is_template: yes
+  when: >
+    vmware_image_upload_state is not defined or
+    vmware_image_upload_state != 'absent'
+
+- name: Remove the VM template
+  vmware_guest:
+    hostname: "{{ vmware_image_upload_hostname }}"
+    port: "{{ vmware_image_upload_port }}"
+    username: "{{ vmware_image_upload_username }}"
+    password: "{{ vmware_image_upload_password }}"
+    validate_certs: "{{ vmware_image_upload_validate_certs }}"
+    datacenter: "{{ vmware_image_upload_datacenter }}"
+    folder: "{{ vmware_image_upload_folder }}"
+    uuid: "{{
+        vmware_image_upload_facts.instance.config.uuid | default(
+        vmware_image_upload_exists.instance.config.uuid) }}"
+    state: absent
+  when: >
+    vmware_image_upload_state is defined and
+    vmware_image_upload_state == 'absent' and
+    'instance' in vmware_image_upload_exists and
+    vmware_image_upload_exists.instance.config.template

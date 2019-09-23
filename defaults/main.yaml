@@ -1,0 +1,25 @@
+---
+
+# vCenter hostname
+vmware_image_upload_hostname: "{{ ansible_host }}"
+
+# vCenter port number
+vmware_image_upload_port: 443
+
+# Whether to validate SSL certificates
+vmware_image_upload_validate_certs: no
+
+# Reguired variables which must be specified by the user
+vmware_image_upload_username: null
+vmware_image_upload_password: null
+vmware_image_upload_name: null
+vmware_image_upload_datacenter: null
+vmware_image_upload_cluster: null
+vmware_image_upload_datastore: null
+vmware_image_upload_folder: null
+vmware_image_upload_network: null
+vmware_image_upload_networks: "{u'VM Network':u'{{ vmware_image_upload_network }}'}"
+vmware_image_upload_ovf: null
+
+# Set to 'absent' to delete the uploaded image
+#vmware_image_upload_state: null
