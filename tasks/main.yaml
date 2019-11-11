@@ -67,8 +67,9 @@
           vmware_image_upload_exists.instance.config.uuid) }}"
       schema: vsphere
       properties:
-        - config.uuid
+        - config.hardware
         - config.template
+        - config.uuid
         - runtime.powerState
     register: vmware_image_upload_facts
 
@@ -97,6 +98,22 @@
       state_change_timeout: 60
     when: >
       vmware_image_upload_facts.instance.runtime.powerState == 'poweredOn'
+
+  - name: Remove the network device
+    local_action:
+      module: vmware_guest_network
+      hostname: "{{ vmware_image_upload_hostname }}"
+      port: "{{ vmware_image_upload_port }}"
+      username: "{{ vmware_image_upload_username }}"
+      password: "{{ vmware_image_upload_password }}"
+      validate_certs: "{{ vmware_image_upload_validate_certs }}"
+      uuid: "{{ vmware_image_upload_facts.instance.config.uuid }}"
+      networks:
+        - mac: "{{ (vmware_image_upload_facts.instance.config.hardware.device | selectattr('macAddress', 'defined') | map(attribute='macAddress') | list)[0] }}"
+          state: absent
+    when: >
+      'instance' in vmware_image_upload_exists and
+      not vmware_image_upload_exists.instance.config.template
 
   - name: Convert the VM to template
     local_action:
