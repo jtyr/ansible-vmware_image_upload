@@ -16,7 +16,7 @@
 
 - name: Check if the image already exists
   local_action:
-    module: vmware_guest_facts
+    module: vmware_guest_info
     hostname: "{{ vmware_image_upload_hostname }}"
     port: "{{ vmware_image_upload_port }}"
     username: "{{ vmware_image_upload_username }}"
@@ -27,7 +27,6 @@
     schema: vsphere
     properties:
       - config.uuid
-      - config.template
   changed_when: no
   failed_when: no
   register: vmware_image_upload_exists
@@ -55,7 +54,7 @@
 
   - name: Get the power state
     local_action:
-      module: vmware_guest_facts
+      module: vmware_guest_info
       hostname: "{{ vmware_image_upload_hostname }}"
       port: "{{ vmware_image_upload_port }}"
       username: "{{ vmware_image_upload_username }}"
@@ -109,11 +108,12 @@
       validate_certs: "{{ vmware_image_upload_validate_certs }}"
       uuid: "{{ vmware_image_upload_facts.instance.config.uuid }}"
       networks:
-        - mac: "{{ (vmware_image_upload_facts.instance.config.hardware.device | selectattr('macAddress', 'defined') | map(attribute='macAddress') | list)[0] }}"
+        - mac: "{{ vmware_image_upload_facts.instance | get_matching('config.hardware.device.{macAddress}.0.macAddress') }}"
           state: absent
     when: >
-      'instance' in vmware_image_upload_exists and
-      not vmware_image_upload_exists.instance.config.template
+      vmware_image_upload_remove_nic and
+      'instance' in vmware_image_upload_facts and
+      not vmware_image_upload_facts.instance.config.template
 
   - name: Convert the VM to template
     local_action:

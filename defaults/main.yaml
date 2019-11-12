@@ -23,3 +23,6 @@ vmware_image_upload_ovf: null
 
 # Set to 'absent' to delete the uploaded image
 #vmware_image_upload_state: null
+
+# Whether to remove the NIC before turning VM into template
+vmware_image_upload_remove_nic: yes
