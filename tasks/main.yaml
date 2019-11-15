@@ -6,7 +6,6 @@
       - vmware_image_upload_username != None
       - vmware_image_upload_password != None
       - vmware_image_upload_name != None
-      - vmware_image_upload_datacenter != None
       - vmware_image_upload_cluster != None
       - vmware_image_upload_datastore != None
       - vmware_image_upload_folder != None
