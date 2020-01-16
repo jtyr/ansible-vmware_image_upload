@@ -31,6 +31,33 @@
   register: vmware_image_upload_exists
 
 - block:
+  - name: Get the image size
+    local_action:
+      module: >
+        shell
+        du -bc {{ vmware_image_upload_ovf | regex_replace('\.[Oo][Vv][Ff]$', '*') }} |
+        tail -n1 |
+        grep -Po '^\d+'
+    register: vmware_image_upload_image_size
+
+  - name: Get the datastore info
+    local_action:
+      module: vmware_datastore_info
+      hostname: "{{ vmware_image_upload_hostname }}"
+      port: "{{ vmware_image_upload_port }}"
+      username: "{{ vmware_image_upload_username }}"
+      password: "{{ vmware_image_upload_password }}"
+      validate_certs: "{{ vmware_image_upload_validate_certs }}"
+      datacenter: "{{ vmware_image_upload_datacenter }}"
+      cluster: "{{ vmware_image_upload_cluster }}"
+    register: vmware_image_upload_datastore_info
+
+  - fail:
+      msg: Insufficient disk space on the datastore {{ vmware_image_upload_datastore }}
+    when: >
+      vmware_image_upload_datastore_info.datastores | selectattr('name', 'match', '^%s$' % vmware_image_upload_datastore) | list | length > 0 and
+      vmware_image_upload_image_size.stdout | int > vmware_image_upload_datastore_info.datastores | selectattr('name', 'match', '^%s$' % vmware_image_upload_datastore) | map(attribute='freeSpace') | first | int
+
   - name: Upload image
     local_action:
       module: vmware_deploy_ovf
