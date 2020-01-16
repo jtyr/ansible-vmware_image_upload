@@ -147,5 +147,4 @@
   when: >
     vmware_image_upload_state is defined and
     vmware_image_upload_state == 'absent' and
-    'instance' in vmware_image_upload_exists and
-    vmware_image_upload_exists.instance.config.template
+    vmware_image_upload_exists.instance.config.uuid is defined
